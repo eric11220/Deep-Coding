@@ -5,3 +5,4 @@ ld = Loader()
 data = ld.loadTest('mfcc', 100)
 for key in data.keys():
     print data[key][1:5,0]
+    raw_input()
