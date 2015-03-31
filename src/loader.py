@@ -1,24 +1,44 @@
 import numpy as np
 import itertools
 class Loader:
-    PATH = '/tmp3/mlds_hw1/MLDS_HW1_RELEASE_v1/'
-    length = {'mfcc':39, 'fbank':48, 'state':1943}
-    trainData = None
-    batchIdx = 0
-    dim = 0
 
     def __init__(self):
-        pass
+        self.length = {'mfcc':39, 'fbank':48, 'state':1943}  # input lengths 
+        self.fbank = {'aa':0,'el':1,'ch':2,'ae':3,'eh':4,'cl':5,'ah':6,'ao':7,'ih':8,'en':9,'ey':10,'aw':11,'ay':12,'ax':13,'er':14,'vcl':15,'ng':16,'iy':17,'sh':18,'th':19,'sil':20,'zh':21,'w':22,'dh':23,'v':24,'ix':25,'y':26,'hh':27,'jh':28,'dx':29,'b':30,'d':31,'g':32,'f':33,'k':34,'m':35,'l':36,'n':37,'uh':38,'p':39,'s':40,'r':41,'t':42,'oy':43,'epi':44,'ow':45,'z':46,'uw':47}   # for constructing fround truth vector based on given label
+
+        self.PATH       = '/tmp3/mlds_hw1/MLDS_HW1_RELEASE_v1/' # "root" directory
+        self.LBL_PATH   = self.PATH + 'label/train.lab'         # path of ground truth file
+
+        self.trainData          = None
+        self.ground_truth_vecs  = None 
+        self.batchIdx           = 0
+        self.in_dim             = 0
+        self.out_dim            = 0
+        self.FBANK_DIM          = 48
+        self.form               = 'mfcc'
+
+    '''
+        Check if the given form is of the 3 legal forms 
+    '''
     def sanitizeForm(self, form):
         if form != 'mfcc' and form != 'fbank' and form != 'state':
-            return False
+            print "Format not recognized!\nUsing default format: mfcc..."
+            raw_input('Press any key to continue')
 
-    def loadFile(self, path, num, form):
-        self.num = num
-        self.dim = self.length[form]
-        self.trainData = np.zeros(shape=(self.dim,0))
+    '''
+        reset idx for next epoch
+    '''
+    def resetBatchIdx(self):
+        self.batchIdx = 0
 
-        data = {}
+    def loadFeature(self, path, num):
+        form = self.form
+        self.in_dim = self.length[form]
+
+        #labels = {}
+        #data = {}
+        data = []
+        names = []
         with open(path, 'U') as fptr:
             idx = 0
             for line in fptr:
@@ -29,34 +49,126 @@ class Loader:
                     break
 
                 features = tmpFeature.split(' ')
-                n = np.array(features)[np.newaxis]
-                data[name] = np.asarray(n.T)
+                features = [float(feature) for feature in features]
+                n = np.array(features)
 
-        return data
-
-    def loadTest(self, form, num):
-        if self.sanitizeForm(form) == False:
-            return None
-
-        dataPath = self.PATH + form + '/test.ark'
-        return self.loadFile(dataPath, num, form)
+                data.append(n.reshape(-1, 1))
+                names.append(name)
         
-    def loadTrain(self, form, num):
-        if self.sanitizeForm(form) == False:
-            return None
+        return data, names
+
+    def loadLabels(self, path, num):
+        labels = []
+        with open(self.LBL_PATH, 'U') as fptr:
+            idx = 0
+            for line in fptr:
+                name, lbl = line.strip().split(',')
+
+                idx = idx+1
+                if idx > num:
+                    break
+
+                labels.append(lbl)
+
+        return labels
+
+    '''
+        loading test examples
+    '''
+    def loadTest(self, num):
+
+        dataPath = self.PATH + self.form + '/test.ark'
+        return self.loadFeature(dataPath, num)
+        #return self.loadFeature(dataPath, num)
+        
+    '''
+        loading training examples
+    '''
+    def loadTrain(self, form, num, out_form='fbank'):
+        self.num = num
+        self.sanitizeForm(form)
+
+        if self.sanitizeForm(out_form) == False:
+            out_form = 'mfcc'
+
+        out_dim = self.length[out_form]
+        self.out_dim = out_dim
 
         dataPath = self.PATH + form + '/train.ark'
-        dataDic = self.loadFile(dataPath, num, form)
-        for key in dataDic.keys():
-            data = dataDic[key]
-            self.trainData = np.hstack((self.trainData, data))
 
+        #self.trainData, self.trainLabels = self.loadFeature(dataPath, num, form)
+
+        #self.trainData = []
+        #self.trainLabels = []
+        #dataDic, lblDic = self.loadFeature(dataPath, num)
+        self.trainData, names = self.loadFeature(dataPath, num)
+        trainLabels = self.loadLabels(dataPath, num)
+
+        self.ground_truth_vecs = []
+        #for key in lblDic.keys():
+        for name in trainLabels:
+            #self.trainData.append(dataDic[key])
+
+            feature_idx = self.getFeatureIdx(out_form, name)
+            ground_truth = np.zeros(shape=(out_dim, 1))
+            ground_truth[feature_idx] = 1
+
+            self.ground_truth_vecs.append(ground_truth)
+            #value = lblDic[key]
+            #feature_idx = self.getFeatureIdx(out_form, value)
+
+
+        #self.trainData = np.zeros(shape=(self.in_dim,0))
+        #self.trainLabels = np.zeros(shape=(out_dim,0))
+
+        #for key in dataDic.keys():
+        #    data = dataDic[key]
+        #    self.trainData = np.hstack((self.trainData, data))
+        #
+        #for value in lblDic.values():
+        #    feature_idx = self.getFeatureIdx(out_form, value)
+
+        #    ground_truth = np.zeros(shape=(out_dim, 1))
+        #    ground_truth[feature_idx] = 1
+
+        #    self.trainLabels = np.hstack((self.trainLabels, ground_truth))
+        
+    def transformData(self, dim, data):
+        out = np.zeros(shape=(dim, 0))
+        for i in range(0, len(data)):
+            out = np.hstack((out, data[i]))
+
+        return out
+
+    '''
+        hand out set of training examples of size 'size'
+    '''
     def loadBatch(self, size):
-        if self.batchIdx > self.num:
-            return False
+        if self.batchIdx >= self.num:
+            return [], [] 
         else:
-            idx = self.batchIdx
-            batch = self.trainData[0:self.dim, idx:idx+size]
-            self.batchIdx = self.batchIdx+size
-            return batch
+            #batchData   = np.zeros(shape=(self.in_dim,0))
+            #batchY      = np.zeros(shape=(self.out_dim,0))
 
+            idx = self.batchIdx
+            batchData   = self.transformData(self.in_dim, self.trainData[idx:idx+size])
+            batchY      = self.transformData(self.out_dim, self.ground_truth_vecs[idx:idx+size])
+            #for i in range(idx, idx+size):
+            #    batchData = np.hstack((batchData, self.trainData[i]))
+            #    batchY = np.hstack((batchY, self.ground_truth_vecs[i]))
+
+            #batchData = self.trainData[0:self.in_dim, idx:idx+size]
+            #batchY = self.trainLabels[0:self.FBANK_DIM, idx:idx+size]
+            self.batchIdx = self.batchIdx+size
+            return batchData, batchY
+
+    '''
+        claculate which idx should be 1 in ground truth vector
+    '''
+    def getFeatureIdx(self, form, value):
+        assert(form == 'fbank' or form =='mfcc' or form=='1943')
+        if form == 'mfcc':
+            return self.mfcc[value]            
+        elif form == 'fbank':
+            return self.fbank[value]
+            
