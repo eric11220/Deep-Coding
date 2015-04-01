@@ -2,6 +2,7 @@
 import theano
 import pickle
 import numpy as np
+from loader import Loader
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -31,6 +32,8 @@ class Layer:
 
 class DNN:
     def __init__(self, layer_sizes):
+        self.prev_W_update = []
+        self.prev_b_update = []
         self.layers = []
         self.num = 0
         for i in range(0, len(layer_sizes)-1):
@@ -51,8 +54,8 @@ class DNN:
     #       (output)*(1-output)
     def backwordPass(self, Y, output):
         deltas = []
-        #deltas.append((1 - output[-1])*(output[-1])*(output[-1] - Y))
-        deltas.append(output[-1] - Y)
+        deltas.append((1 - output[-1])*(output[-1])*(output[-1] - Y))
+        #deltas.append(output[-1] - Y)
         #deltas = [output[-1] - Y]
         for layer, output in zip(reversed(self.layers), reversed(output[:-1])):
             deltas.append(layer.W.T.dot(deltas[-1]) * output*(1-output))
@@ -62,21 +65,41 @@ class DNN:
         deltas.reverse()
         return deltas
 
-    def update(self, outputs, deltas, learning_rate=0.01):
+    def update(self, outputs, deltas, momentum=0.9, learning_rate=0.01):
         W_update = []
         b_update = []
         for delta, output in zip(deltas, outputs[:-1]):
             W_update.append(delta.dot(output.T)/self.num)
-
-
         b_update = [delta.mean(axis=1).reshape(-1,1) for delta in deltas]
-        for dW, db, layer in zip(W_update, b_update, self.layers):
-            layer.W -= dW*learning_rate
-            layer.b -= db*learning_rate
 
-    # TODO: transfrom the derived vector to a single label
+        if len(self.prev_W_update) > 0:
+            for pdW, pdb, dW, db, layer in zip(self.prev_W_update, self.prev_b_update, W_update, b_update, self.layers):
+                delta_W = momentum * pdW - learning_rate * dW
+                delta_b = momentum * pdb - learning_rate * db
+                layer.W += delta_W
+                layer.b += delta_b
+        else:
+            for dW, db, layer in zip(W_update, b_update, self.layers):
+                delta_W = -learning_rate * dW
+                delta_b = -learning_rate * db
+                layer.W += delta_W
+                layer.b += delta_b
+
+        # Store the previous weight updates
+        self.prev_W_update = W_update
+        self.prev_b_update = b_update
+
+    # transfrom the derived vector to a single label
     def vectorToLabel(self, X):
-        pass
+        X = X.T
+        ans = []
+        for vector in X:
+            vector = np.nan_to_num(vector)
+            max_idx = np.argmax(vector)
+            label = Loader().n_f_48[max_idx]
+            label_for_output = Loader().map_48_39[label]
+            ans.append(label_for_output)
+        return ans
 
     def predict(self, X):
         if X.ndim == 1:
@@ -84,6 +107,12 @@ class DNN:
 
         for layer in self.layers:
             X = layer.output(X)
+            #print X
+            #print 'SHITTTTTTTTTTTTTTT'
+            #raw_input()
+
+        #print 'DONE'
+
         return self.vectorToLabel(X)
     
     def save(self, path='./dnn.p'):

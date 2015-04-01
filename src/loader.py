@@ -4,7 +4,9 @@ class Loader:
 
     def __init__(self):
         self.length = {'mfcc':39, 'fbank':48, 'state':1943}  # input lengths 
-        self.fbank = {'aa':0,'el':1,'ch':2,'ae':3,'eh':4,'cl':5,'ah':6,'ao':7,'ih':8,'en':9,'ey':10,'aw':11,'ay':12,'ax':13,'er':14,'vcl':15,'ng':16,'iy':17,'sh':18,'th':19,'sil':20,'zh':21,'w':22,'dh':23,'v':24,'ix':25,'y':26,'hh':27,'jh':28,'dx':29,'b':30,'d':31,'g':32,'f':33,'k':34,'m':35,'l':36,'n':37,'uh':38,'p':39,'s':40,'r':41,'t':42,'oy':43,'epi':44,'ow':45,'z':46,'uw':47}   # for constructing fround truth vector based on given label
+        self.fbank = {'aa':0,'el':1,'ch':2,'ae':3,'eh':4,'cl':5,'ah':6,'ao':7,'ih':8,'en':9,'ey':10,'aw':11,'ay':12,'ax':13,'er':14,'vcl':15,'ng':16,'iy':17,'sh':18,'th':19,'sil':20,'zh':21,'w':22,'dh':23,'v':24,'ix':25,'y':26,'hh':27,'jh':28,'dx':29,'b':30,'d':31,'g':32,'f':33,'k':34,'m':35,'l':36,'n':37,'uh':38,'p':39,'s':40,'r':41,'t':42,'oy':43,'epi':44,'ow':45,'z':46,'uw':47}   # for constructing ground truth vector based on given label
+        self.map_48_39 = {'aa':'aa','ae':'ae','ah':'ah','ao':'aa','aw':'aw','ax':'ah','ay':'ay','b':'b','ch':'ch','cl':'sil','d':'d','dh':'dh','dx':'dx','eh':'eh','el':'l','en':'n','epi':'sil','er':'er','ey':'ey','f':'f','g':'g','hh':'hh','ih':'ih','ix':'ih','iy':'iy','jh':'jh','k':'k','l':'l','m':'m','ng':'ng','n':'n','ow':'ow','oy':'oy','p':'p','r':'r','sh':'sh','sil':'sil','s':'s','th':'th','t':'t','uh':'uh','uw':'uw','vcl':'sil','v':'v','w':'w','y':'y','zh':'sh','z':'z'}
+        self.n_f_48 = {0:'aa',1:'el',2:'ch',3:'ae',4:'eh',5:'cl',6:'ah',7:'ao',8:'ih',9:'en',10:'ey',11:'aw',12:'ay',13:'ax',14:'er',15:'vcl',16:'ng',17:'iy',18:'sh',19:'th',20:'sil',21:'zh',22:'w',23:'dh',24:'v',25:'ix',26:'y',27:'hh',28:'jh',29:'dx',30:'b',31:'d',32:'g',33:'f',34:'k',35:'m',36:'l',37:'n',38:'uh',39:'p',40:'s',41:'r',42:'t',43:'oy',44:'epi',45:'ow',46:'z',47:'uw'}
 
         self.PATH       = '/tmp3/mlds_hw1/MLDS_HW1_RELEASE_v1/' # "root" directory
         self.LBL_PATH   = self.PATH + 'label/train.lab'         # path of ground truth file
@@ -77,7 +79,7 @@ class Loader:
     '''
     def loadTest(self, num):
 
-        dataPath = self.PATH + self.form + '/test.ark'
+        dataPath = self.PATH + self.form + '/train.ark'
         return self.loadFeature(dataPath, num)
         #return self.loadFeature(dataPath, num)
         
@@ -137,7 +139,6 @@ class Loader:
         out = np.zeros(shape=(dim, 0))
         for i in range(0, len(data)):
             out = np.hstack((out, data[i]))
-
         return out
 
     '''
