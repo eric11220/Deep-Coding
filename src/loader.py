@@ -37,8 +37,6 @@ class Loader:
         form = self.form
         self.in_dim = self.length[form]
 
-        #labels = {}
-        #data = {}
         data = []
         names = []
         with open(path, 'U') as fptr:
@@ -81,7 +79,6 @@ class Loader:
 
         dataPath = self.PATH + self.form + '/train.ark'
         return self.loadFeature(dataPath, num)
-        #return self.loadFeature(dataPath, num)
         
     '''
         loading training examples
@@ -98,42 +95,17 @@ class Loader:
 
         dataPath = self.PATH + form + '/train.ark'
 
-        #self.trainData, self.trainLabels = self.loadFeature(dataPath, num, form)
-
-        #self.trainData = []
-        #self.trainLabels = []
-        #dataDic, lblDic = self.loadFeature(dataPath, num)
         self.trainData, names = self.loadFeature(dataPath, num)
         trainLabels = self.loadLabels(dataPath, num)
 
         self.ground_truth_vecs = []
-        #for key in lblDic.keys():
         for name in trainLabels:
-            #self.trainData.append(dataDic[key])
 
             feature_idx = self.getFeatureIdx(out_form, name)
             ground_truth = np.zeros(shape=(out_dim, 1))
             ground_truth[feature_idx] = 1
 
             self.ground_truth_vecs.append(ground_truth)
-            #value = lblDic[key]
-            #feature_idx = self.getFeatureIdx(out_form, value)
-
-
-        #self.trainData = np.zeros(shape=(self.in_dim,0))
-        #self.trainLabels = np.zeros(shape=(out_dim,0))
-
-        #for key in dataDic.keys():
-        #    data = dataDic[key]
-        #    self.trainData = np.hstack((self.trainData, data))
-        #
-        #for value in lblDic.values():
-        #    feature_idx = self.getFeatureIdx(out_form, value)
-
-        #    ground_truth = np.zeros(shape=(out_dim, 1))
-        #    ground_truth[feature_idx] = 1
-
-        #    self.trainLabels = np.hstack((self.trainLabels, ground_truth))
         
     def transformData(self, dim, data):
         out = np.zeros(shape=(dim, 0))
@@ -148,18 +120,10 @@ class Loader:
         if self.batchIdx >= self.num:
             return [], [] 
         else:
-            #batchData   = np.zeros(shape=(self.in_dim,0))
-            #batchY      = np.zeros(shape=(self.out_dim,0))
 
             idx = self.batchIdx
             batchData   = self.transformData(self.in_dim, self.trainData[idx:idx+size])
             batchY      = self.transformData(self.out_dim, self.ground_truth_vecs[idx:idx+size])
-            #for i in range(idx, idx+size):
-            #    batchData = np.hstack((batchData, self.trainData[i]))
-            #    batchY = np.hstack((batchY, self.ground_truth_vecs[i]))
-
-            #batchData = self.trainData[0:self.in_dim, idx:idx+size]
-            #batchY = self.trainLabels[0:self.FBANK_DIM, idx:idx+size]
             self.batchIdx = self.batchIdx+size
             return batchData, batchY
 

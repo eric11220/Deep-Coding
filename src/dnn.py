@@ -12,10 +12,6 @@ class Layer:
         initialization weight and bias by normal distribution between 0, 1
     '''
     def __init__(self, in_size, out_size):
-        #self.W = np.random.randn(out_size, in_size)
-        #self.b = np.random.randn(out_size, 1) 
-        #self.W = np.ones(shape=[out_size, in_size])/2
-        #self.b = np.ones(shape=[out_size, 1])/2
         self.W = np.random.normal(0, 1, [out_size, in_size])
         self.b = np.random.normal(0, 1, [out_size, 1])
 
@@ -55,8 +51,6 @@ class DNN:
     def backwordPass(self, Y, output):
         deltas = []
         deltas.append((1 - output[-1])*(output[-1])*(output[-1] - Y))
-        #deltas.append(output[-1] - Y)
-        #deltas = [output[-1] - Y]
         for layer, output in zip(reversed(self.layers), reversed(output[:-1])):
             deltas.append(layer.W.T.dot(deltas[-1]) * output*(1-output))
 
@@ -107,11 +101,6 @@ class DNN:
 
         for layer in self.layers:
             X = layer.output(X)
-            #print X
-            #print 'SHITTTTTTTTTTTTTTT'
-            #raw_input()
-
-        #print 'DONE'
 
         return self.vectorToLabel(X)
     
